@@ -169,6 +169,9 @@
     clearPendingExternalPrefill(incoming.id);
     externalNotice = incoming;
     url = incoming.url;
+    if (getSettings()?.download.auto_download_on_paste) {
+      pendingAutoDownload = true;
+    }
     handleInput();
   });
 
