@@ -670,7 +670,10 @@
             <span class="setting-label">{$t('settings.download.auto_download_on_paste')}</span>
             <span class="setting-path">{$t('settings.download.auto_download_on_paste_desc')}</span>
           </div>
-          <button class="toggle" class:on={settings.download.auto_download_on_paste} class:disabled={!settings.download.clipboard_detection} disabled={!settings.download.clipboard_detection} aria-disabled={!settings.download.clipboard_detection} onclick={() => toggleBool("download", "auto_download_on_paste", settings!.download.auto_download_on_paste)} role="switch" aria-checked={settings.download.auto_download_on_paste} aria-label={$t('settings.download.auto_download_on_paste')}><span class="toggle-knob"></span></button>
+          <button class="toggle" class:on={settings.download.auto_download_on_paste} onclick={async () => {
+            const next = !settings!.download.auto_download_on_paste;
+            await updateSettings({ download: { auto_download_on_paste: next, ...(next && !settings!.download.clipboard_detection ? { clipboard_detection: true } : {}) } });
+          }} role="switch" aria-checked={settings.download.auto_download_on_paste} aria-label={$t('settings.download.auto_download_on_paste')}><span class="toggle-knob"></span></button>
         </div>
       </div>
     </details>
