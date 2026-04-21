@@ -254,27 +254,62 @@ pub async fn check_ytdlp_update(ytdlp: &Path) -> anyhow::Result<bool> {
         return Ok(false);
     }
 
-    let ytdlp = ytdlp.to_path_buf();
-    let output = tokio::task::spawn_blocking(move || {
-        crate::core::process::std_command(&ytdlp)
-            .args(["--update-to", "nightly"])
+    let ytdlp_path = ytdlp.to_path_buf();
+    let version_output = tokio::task::spawn_blocking(move || {
+        crate::core::process::std_command(&ytdlp_path)
+            .arg("--version")
             .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
+            .stderr(Stdio::null())
             .output()
     })
     .await??;
 
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let stderr = String::from_utf8_lossy(&output.stderr);
-    let combined = format!("{}{}", stdout, stderr);
-
-    if combined.contains("Updated yt-dlp") || combined.contains("Updating to") {
-        tracing::info!("[ytdlp] updated: {}", combined.trim());
-        reset_ytdlp_cache();
-        Ok(true)
-    } else {
-        Ok(false)
+    if !version_output.status.success() {
+        return Err(anyhow!("yt-dlp --version exited non-zero"));
     }
+    let local_version = String::from_utf8_lossy(&version_output.stdout)
+        .lines()
+        .next()
+        .unwrap_or("")
+        .trim()
+        .to_string();
+
+    #[derive(serde::Deserialize)]
+    struct GitHubRelease {
+        tag_name: String,
+    }
+
+    let client = crate::core::http_client::apply_global_proxy(reqwest::Client::builder())
+        .user_agent("OmniGet")
+        .timeout(std::time::Duration::from_secs(20))
+        .build()?;
+
+    let release: GitHubRelease = client
+        .get("https://api.github.com/repos/yt-dlp/yt-dlp-nightly-builds/releases/latest")
+        .send()
+        .await?
+        .error_for_status()?
+        .json()
+        .await?;
+
+    let latest = release.tag_name.trim().trim_start_matches('v').to_string();
+    if !latest.is_empty() && latest == local_version {
+        tracing::debug!("[ytdlp] already up to date (version {})", local_version);
+        return Ok(false);
+    }
+
+    tracing::info!(
+        "[ytdlp] updating from {} to {}",
+        if local_version.is_empty() {
+            "unknown"
+        } else {
+            local_version.as_str()
+        },
+        latest
+    );
+    download_ytdlp_binary().await?;
+    reset_ytdlp_cache();
+    Ok(true)
 }
 
 fn proxy_args() -> Vec<String> {
@@ -550,13 +585,13 @@ async fn download_ytdlp_binary() -> anyhow::Result<PathBuf> {
     }
 
     let download_url = if cfg!(target_os = "windows") {
-        "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe"
+        "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp.exe"
     } else if cfg!(target_os = "macos") {
-        "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos"
+        "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp_macos"
     } else if cfg!(target_arch = "aarch64") {
-        "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux_aarch64"
+        "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp_linux_aarch64"
     } else {
-        "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp"
+        "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp"
     };
 
     let client = crate::core::http_client::apply_global_proxy(reqwest::Client::builder())
