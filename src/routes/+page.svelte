@@ -175,6 +175,11 @@
     lastExternalPrefillId = incoming.id;
     clearPendingExternalPrefill(incoming.id);
     externalNotice = incoming;
+
+    if (incoming.action !== "prefill") {
+      return;
+    }
+
     url = incoming.url;
     if (getSettings()?.download.auto_download_on_paste) {
       pendingAutoDownload = true;
