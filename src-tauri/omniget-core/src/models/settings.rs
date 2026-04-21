@@ -51,6 +51,8 @@ pub struct DownloadSettings {
     pub embed_thumbnail: bool,
     #[serde(default)]
     pub clipboard_detection: bool,
+    #[serde(default)]
+    pub auto_download_on_paste: bool,
     #[serde(default = "default_filename_template")]
     pub filename_template: String,
     #[serde(default)]
@@ -172,7 +174,7 @@ impl Default for AppSettings {
             },
             download: DownloadSettings {
                 default_output_dir: dirs::download_dir().unwrap_or_else(|| PathBuf::from(".")),
-                always_ask_path: true,
+                always_ask_path: false,
                 video_quality: "720p".into(),
                 skip_existing: true,
                 download_attachments: true,
@@ -180,6 +182,7 @@ impl Default for AppSettings {
                 embed_metadata: true,
                 embed_thumbnail: true,
                 clipboard_detection: false,
+                auto_download_on_paste: false,
                 filename_template: default_filename_template(),
                 organize_by_platform: false,
                 download_subtitles: false,

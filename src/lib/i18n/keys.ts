@@ -492,6 +492,8 @@ export type TranslationKeys =
   | 'settings.dependencies.title'
   | 'settings.dependencies.update'
   | 'settings.download.always_ask_path'
+  | 'settings.download.auto_download_on_paste'
+  | 'settings.download.auto_download_on_paste_desc'
   | 'settings.download.choose_folder'
   | 'settings.download.clipboard_detection'
   | 'settings.download.clipboard_detection_desc'
@@ -636,6 +638,7 @@ export type TranslationKeys =
   | 'terms_note.agreement'
   | 'terms_note.link'
 
+  | 'toast.auto_download_started'
   | 'toast.clipboard_url_detected'
   | 'toast.download_already_active'
   | 'toast.download_cancelled'

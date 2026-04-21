@@ -92,17 +92,43 @@
   let p2pReceiveUrl = $state("");
   let externalNotice = $state<ExternalUrlEvent | null>(null);
   let lastExternalPrefillId = $state<number | null>(null);
+  let pendingAutoDownload = $state(false);
 
   onMount(() => {
     onClipboardUrl((detectedUrl) => {
       if (omniState.kind === "preparing") return;
       url = detectedUrl;
+      const settings = getSettings();
+      const autoDownload = !!(settings?.download.auto_download_on_paste && settings?.download.clipboard_detection);
+      pendingAutoDownload = autoDownload;
       handleInput();
-      showToast("info", $t("toast.clipboard_url_detected"));
+      showToast("info", $t(autoDownload ? "toast.auto_download_started" : "toast.clipboard_url_detected"));
     });
     return () => {
       onClipboardUrl(null);
     };
+  });
+
+  $effect(() => {
+    if (!pendingAutoDownload) return;
+    if (omniState.kind === "detected") {
+      const info = omniState.info;
+      if (info.platform === "hotmart" || info.platform === "p2p") {
+        pendingAutoDownload = false;
+        return;
+      }
+      pendingAutoDownload = false;
+      handleAction();
+    } else if (
+      omniState.kind === "unsupported" ||
+      omniState.kind === "error" ||
+      omniState.kind === "batch" ||
+      omniState.kind === "search-results" ||
+      omniState.kind === "search-empty" ||
+      omniState.kind === "idle"
+    ) {
+      pendingAutoDownload = false;
+    }
   });
 
   const STALL_THRESHOLD = 30_000;
