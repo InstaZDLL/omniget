@@ -301,6 +301,9 @@
 
     if (isUrl(trimmed)) {
       omniState = { kind: "detecting" };
+      if (getSettings()?.download.auto_download_on_paste) {
+        pendingAutoDownload = true;
+      }
       debounceTimer = setTimeout(() => {
         detectPlatform(trimmed);
       }, 500);
