@@ -749,6 +749,12 @@ impl PlatformDownloader for TwitterDownloader {
 
         let count = info.available_qualities.len();
 
+        if count == 0 {
+            anyhow::bail!(
+                "No downloadable media found for this tweet (it may be text-only, protected, or deleted)"
+            );
+        }
+
         if count == 1 {
             let quality = info.available_qualities.first().unwrap();
             let filename = format!(
