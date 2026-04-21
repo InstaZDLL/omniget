@@ -109,6 +109,8 @@
     };
   });
 
+  const AUTO_DOWNLOAD_DELAY_MS = 2000;
+
   $effect(() => {
     if (!pendingAutoDownload) return;
     if (omniState.kind === "detected") {
@@ -118,7 +120,12 @@
         return;
       }
       pendingAutoDownload = false;
-      handleAction();
+      const snapshotUrl = url;
+      setTimeout(() => {
+        if (url === snapshotUrl && omniState.kind === "detected") {
+          handleAction();
+        }
+      }, AUTO_DOWNLOAD_DELAY_MS);
     } else if (
       omniState.kind === "unsupported" ||
       omniState.kind === "error" ||
